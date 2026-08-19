@@ -1,0 +1,11 @@
+# Makes FiatCorTheme a singleton, so pages and components reach it as
+# FiatCorTheme.* after `import ".."` rather than being handed a palette
+# object through every constructor.
+#
+# Cor is listed too, and that is not optional. A directory that contains a
+# qmldir stops resolving its .qml files implicitly — without the line below
+# `Cor { }` in FiatCor.qml stops being a known type the moment this file
+# exists. Anything else added at qml/ root has to be listed here as well.
+
+singleton FiatCorTheme 1.0 FiatCorTheme.qml
+Cor 1.0 Cor.qml

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiat Cor — preview</title>
+<style>
+  /* Simulated Sailfish ambiences. The app itself has no colours: every
+     value below stands in for a Theme.* token, and the wallpaper behind
+     the phone is there to prove there is no background rectangle. */
+  body[data-amb="dark"] {
+    --wall: radial-gradient(120% 90% at 25% 8%, #2a3340 0%, #131820 45%, #080a0d 100%);
+    --primary: rgba(255,255,255,.86);
+    --secondary: rgba(255,255,255,.52);
+    --highlight: #6EC2E0;
+    --card: #141414;
+  }
+  body[data-amb="light"] {
+    --wall: radial-gradient(120% 90% at 25% 8%, #f6efe4 0%, #e6dccc 48%, #cfc2ad 100%);
+    --primary: rgba(0,0,0,.84);
+    --secondary: rgba(0,0,0,.48);
+    --highlight: #9B4A2F;
+    --card: #f5f5f5;
+  }
+  body[data-amb="violet"] {
+    --wall: radial-gradient(120% 90% at 70% 10%, #3b2350 0%, #1d1229 50%, #0b070f 100%);
+    --primary: rgba(255,255,255,.88);
+    --secondary: rgba(255,255,255,.5);
+    --highlight: #C88BE8;
+    --card: #141414;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin:0; background:#0c0c0d; color:#8e8e93;
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    display:flex; flex-direction:column; align-items:center; padding:28px 16px 48px;
+  }
+  .intro { max-width:640px; text-align:center; }
+  .intro h1 { font-weight:300; font-size:30px; margin:0 0 6px; color:#e6e6e8; letter-spacing:.02em; }
+  .intro p { margin:0; font-size:14px; line-height:1.55; color:#85858b; }
+  .bar { display:flex; gap:10px; margin:20px 0 22px; flex-wrap:wrap; justify-content:center; }
+  .bar button {
+    background:transparent; border:1px solid #4a4a50; color:#c9c9ce;
+    padding:9px 18px; border-radius:999px; font-size:13px; cursor:pointer;
+  }
+  .bar button.on { background:#2c2c31; border-color:#7a7a82; color:#fff; }
+
+  .phone {
+    width:540px; height:960px; border-radius:26px; overflow:hidden;
+    background:var(--wall); position:relative;
+    box-shadow:0 0 0 8px #000, 0 22px 60px rgba(0,0,0,.75);
+  }
+  .scroll { position:absolute; inset:0; overflow-y:auto; padding-bottom:48px; }
+  .scroll::-webkit-scrollbar { width:0; }
+
+  .hdr { height:120px; display:flex; flex-direction:column;
+         justify-content:flex-end; align-items:flex-end; padding:0 32px 14px; }
+  .hdr .t { font-size:38px; font-weight:300; color:var(--primary); }
+  .hdr .d { font-size:15px; color:var(--secondary); margin-top:2px; }
+
+  /* the card — the instrument standing on its own legs */
+  .card {
+    margin:0 32px; border-radius:36px; background:var(--card);
+    border:2px solid color-mix(in srgb, var(--primary) 45%, transparent);
+    padding:24px;
+  }
+
+  .heart { position:relative; height:270px; }
+  .ring, .subring, .body {
+    position:absolute; left:50%; top:50%; border-radius:50%;
+    transform:translate(-50%,-50%);
+  }
+  .ring { width:135px; height:135px; border:2px solid var(--highlight); opacity:0; }
+  .subring { width:165px; height:165px;
+             border:1px solid color-mix(in srgb, var(--primary) 55%, transparent); opacity:0; }
+  .body { width:135px; height:135px; cursor:pointer; }
+  .core { position:absolute; inset:0; border-radius:50%;
+          background:color-mix(in srgb, var(--primary) 12%, transparent);
+          border:1px solid color-mix(in srgb, var(--primary) 35%, transparent); }
+  .flash { position:absolute; inset:0; border-radius:50%; background:var(--highlight); opacity:0; }
+
+  .dots { display:flex; justify-content:center; height:60px; margin-top:6px; }
+  .slot { position:relative; cursor:pointer; }
+  .dot { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+         border-radius:50%; transition:width .12s, height .12s, background .12s; }
+  .here { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+          width:42px; height:42px; border-radius:50%; border:2px solid var(--highlight);
+          opacity:0; transition:opacity .09s; }
+
+  .bpm { text-align:center; margin-top:10px; }
+  .bpm .n { font-size:64px; font-weight:200; color:var(--primary); line-height:1.05; }
+  .bpm .s { font-size:15px; color:var(--secondary); margin-top:2px; }
+
+  .pad { padding:0 32px; margin-top:28px; }
+  input[type=range] { width:100%; margin:0 0 22px; accent-color:var(--highlight); }
+
+  .row { display:flex; gap:14px; margin-bottom:20px; }
+  .btn {
+    height:78px; border-radius:999px; cursor:pointer; font-size:23px;
+    display:flex; align-items:center; justify-content:center;
+    background:color-mix(in srgb, var(--primary) 15%, transparent);
+    border:1px solid color-mix(in srgb, var(--primary) 55%, transparent);
+    color:var(--primary); transition:background .14s, border-color .14s, color .14s;
+  }
+  .btn.side { width:118px; }
+  .btn.grow { flex:1; }
+  .btn.on {
+    background:color-mix(in srgb, var(--highlight) 15%, transparent);
+    border-color:color-mix(in srgb, var(--highlight) 45%, transparent);
+    color:var(--highlight);
+  }
+
+  .sec { font-size:15px; color:var(--secondary); padding:0 32px; margin:26px 0 12px; }
+  .pills { display:flex; flex-wrap:wrap; gap:12px; padding:0 32px; }
+  .pill {
+    min-width:74px; height:52px; padding:0 20px; border-radius:999px; cursor:pointer;
+    font-size:17px; font-weight:600; display:flex; align-items:center; justify-content:center;
+    background:color-mix(in srgb, var(--primary) 15%, transparent);
+    border:1px solid color-mix(in srgb, var(--primary) 55%, transparent);
+    color:var(--primary); transition:background .12s, border-color .12s, color .12s;
+  }
+  .pill.on {
+    background:color-mix(in srgb, var(--highlight) 15%, transparent);
+    border-color:color-mix(in srgb, var(--highlight) 45%, transparent);
+    color:var(--highlight);
+  }
+
+  .note { max-width:640px; margin-top:26px; font-size:13px; line-height:1.6; color:#7d7d83; }
+  .note b { color:#b6b6bb; font-weight:600; }
+</style>
+</head>
+<body data-amb="dark">
+
+<div class="intro">
+  <h1>Fiat Cor</h1>
+  <p>Interactive preview of MetronomePage — same layout, same pulse animation,
+     same four click sounds as the QML. Tap the beat dots to set accents:
+     strong → medium → plain → silent. Switch ambience to see the app take on
+     the user's colours; the wallpaper behind the card is the point.</p>
+</div>
+
+<div class="bar">
+  <button id="ambBtn">Ambience: dark</button>
+  <button id="soundBtn" class="on">Sound on</button>
+  <button id="resetBtn">Reset accents</button>
+</div>
+
+<div class="phone">
+  <div class="scroll">
+    <div class="hdr"><div class="t">Fiat Cor</div><div class="d">Metronome</div></div>
+
+    <div class="card">
+      <div class="heart">
+        <div class="ring" id="ring"></div>
+        <div class="subring" id="subring"></div>
+        <div class="body" id="body"><div class="core"></div><div class="flash" id="flash"></div></div>
+      </div>
+      <div class="dots" id="dots"></div>
+      <div class="bpm"><div class="n" id="bpmN">90</div><div class="s" id="bpmS">4/4 · Andante</div></div>
+    </div>
+
+    <div class="pad">
+      <input type="range" id="slider" min="30" max="250" value="90">
+      <div class="row">
+        <button class="btn side" id="minus">−</button>
+        <button class="btn grow" id="tap">Tap</button>
+        <button class="btn side" id="plus">+</button>
+      </div>
+      <div class="row"><button class="btn grow" id="start">Start</button></div>
+    </div>
+
+    <div class="sec">Beats per bar — tap the bar above to set accents</div>
+    <div class="pills" id="beats"></div>
+
+    <div class="sec">Note value</div>
+    <div class="pills" id="notes"></div>
+
+    <div class="sec">Subdivision</div>
+    <div class="pills" id="subs"></div>
+
+    <div class="sec">Feedback</div>
+    <div class="pills" id="fb"></div>
+  </div>
+</div>
+
+<div class="note">
+  <p><b>Not shown here:</b> the vibration, the cover page and Sailfish's own
+  pull-down menu. The three ambiences are stand-ins — on the device the
+  colours are whatever the user has picked, and Fiat Cor has none of its own.</p>
+</div>
+
+<script>
+const CLICKS = {
+  strong: "data:audio/wav;base64,__STRONG__",
+  medium: "data:audio/wav;base64,__MEDIUM__",
+  normal: "data:audio/wav;base64,__NORMAL__",
+  sub:    "data:audio/wav;base64,__SUB__"
+};
+
+const pool = {};
+for (const k in CLICKS) {
+  pool[k] = [];
+  for (let i = 0; i < 4; i++) { const a = new Audio(CLICKS[k]); a.preload = "auto"; pool[k].push(a); }
+  pool[k].idx = 0;
+}
+function play(kind) {
+  if (!state.sound) return;
+  const p = pool[kind];
+  const a = p[p.idx = (p.idx + 1) % p.length];
+  a.currentTime = 0;
+  a.play().catch(() => {});
+}
+
+const SUBS = { none: 1, eighth: 2, triplet: 3, sixteenth: 4 };
+const LEVEL_NAME = { 3: "strong", 2: "medium", 1: "normal" };
+
+const state = {
+  bpm: 90, beatsPerBar: 4, noteValue: 4, subdivision: "none",
+  pattern: [3, 1, 1, 1],
+  sound: true, running: false,
+  beatInBar: 0, subIndex: 0, beatTime: 0, nextTick: 0, timer: null, taps: []
+};
+
+function defaultPattern(beats, nv) {
+  const compound = (nv === 8 || nv === 16) && beats >= 6 && beats % 3 === 0;
+  const p = [];
+  for (let i = 0; i < beats; i++) p.push(i === 0 ? 3 : (compound && i % 3 === 0 ? 2 : 1));
+  return p;
+}
+function quarterBpm() { return state.bpm * 4 / state.noteValue; }
+function tempoTerm() {
+  const v = quarterBpm();
+  if (v < 60) return "Largo"; if (v < 66) return "Larghetto";
+  if (v < 76) return "Adagio"; if (v < 108) return "Andante";
+  if (v < 120) return "Moderato"; if (v < 156) return "Allegro";
+  if (v < 176) return "Vivace"; if (v < 200) return "Presto";
+  return "Prestissimo";
+}
+
+// --- engine: the same absolute grid as qml/Cor.qml --------------------
+function emitTick() {
+  if (state.subIndex === 0) {
+    const level = state.pattern[state.beatInBar];
+    if (level > 0) play(LEVEL_NAME[level]);
+    beatPulse(level);
+    renderDots();
+  } else {
+    play("sub");
+    subPulse();
+  }
+}
+function advanceAndSchedule() {
+  if (!state.running) return;
+  const beatMs = 60000 / state.bpm;
+  const sc = SUBS[state.subdivision];
+  state.subIndex++;
+  if (state.subIndex >= sc) {
+    state.subIndex = 0;
+    state.beatTime += beatMs;
+    state.beatInBar = (state.beatInBar + 1) % state.beatsPerBar;
+  }
+  state.nextTick = state.beatTime + state.subIndex * (beatMs / sc);
+  const now = performance.now();
+  if (now - state.nextTick > 4 * beatMs) {
+    state.beatTime = now; state.subIndex = 0; state.nextTick = now;
+  }
+  arm(state.nextTick - now);
+}
+function arm(delay) {
+  clearTimeout(state.timer);
+  const d = delay > 18 ? delay - Math.max(15, delay * 0.06) : Math.max(0, delay);
+  state.timer = setTimeout(onTimeout, d);
+}
+function onTimeout() {
+  if (!state.running) return;
+  const remaining = state.nextTick - performance.now();
+  if (remaining > 2) { arm(remaining); return; }
+  emitTick();
+  advanceAndSchedule();
+}
+function start() {
+  if (state.running) return;
+  state.running = true;
+  state.beatInBar = 0; state.subIndex = 0;
+  state.beatTime = performance.now(); state.nextTick = state.beatTime;
+  emitTick(); advanceAndSchedule(); render();
+}
+function stop() {
+  state.running = false; clearTimeout(state.timer);
+  body.style.transform = "translate(-50%,-50%) scale(1)";
+  flash.style.opacity = 0; ring.style.opacity = 0; subring.style.opacity = 0;
+  render();
+}
+
+// --- the pulse: systole, rebound, diastole ----------------------------
+const body = document.getElementById("body");
+const flash = document.getElementById("flash");
+const ring = document.getElementById("ring");
+const subring = document.getElementById("subring");
+
+function beatPulse(level) {
+  if (level <= 0) { subPulse(); return; }
+  const beatMs = 60000 / state.bpm;
+  const amp = level === 3 ? 0.30 : (level === 2 ? 0.21 : 0.14);
+  const flashTo = level === 3 ? 0.95 : (level === 2 ? 0.66 : 0.40);
+  const up = Math.max(40, Math.min(75, beatMs * 0.13));
+  const re = Math.max(50, Math.min(100, beatMs * 0.17));
+  const se = Math.max(90, Math.min(300, beatMs * 0.46));
+  const tot = up + re + se;
+
+  body.animate(
+    [ { transform: "translate(-50%,-50%) scale(1)" },
+      { transform: `translate(-50%,-50%) scale(${1 + amp})`, offset: up / tot, easing: "ease-out" },
+      { transform: `translate(-50%,-50%) scale(${1 + amp * 0.34})`, offset: (up + re) / tot, easing: "ease-out" },
+      { transform: "translate(-50%,-50%) scale(1)" } ],
+    { duration: tot, easing: "ease-in-out" });
+
+  flash.animate([{ opacity: flashTo }, { opacity: 0 }],
+    { duration: Math.max(100, Math.min(340, beatMs * 0.58)), easing: "ease-out" });
+
+  const rd = Math.max(180, Math.min(560, beatMs * 0.9));
+  ring.animate(
+    [ { opacity: level === 3 ? 0.5 : (level === 2 ? 0.32 : 0.18), transform: "translate(-50%,-50%) scale(1)" },
+      { opacity: 0, transform: "translate(-50%,-50%) scale(1.9)" } ],
+    { duration: rd, easing: "ease-out" });
+}
+function subPulse() {
+  subring.animate([{ opacity: 0.45 }, { opacity: 0 }], { duration: 140, easing: "ease-out" });
+}
+setInterval(() => {
+  if (state.running) return;
+  body.animate(
+    [ { transform: "translate(-50%,-50%) scale(1)" },
+      { transform: "translate(-50%,-50%) scale(1.04)", offset: .41, easing: "ease-in-out" },
+      { transform: "translate(-50%,-50%) scale(1)" } ],
+    { duration: 1500, easing: "ease-in-out" });
+}, 1600);
+
+// --- rendering ---------------------------------------------------------
+const DOT_BASE = 26;
+function beatScale(l) { return l === 3 ? 1.0 : l === 2 ? 0.82 : l === 1 ? 0.62 : 0.52; }
+function beatColor(l) {
+  if (l === 3) return "var(--highlight)";
+  if (l === 2) return "color-mix(in srgb, var(--highlight) 60%, transparent)";
+  if (l === 1) return "color-mix(in srgb, var(--primary) 45%, transparent)";
+  return "transparent";
+}
+const dotsHost = document.getElementById("dots");
+function renderDots() {
+  if (dotsHost.childElementCount !== state.beatsPerBar) {
+    dotsHost.innerHTML = "";
+    for (let i = 0; i < state.beatsPerBar; i++) {
+      const slot = document.createElement("div");
+      slot.className = "slot";
+      slot.innerHTML = '<div class="here"></div><div class="dot"></div>';
+      slot.onclick = () => {
+        state.pattern[i] = (state.pattern[i] + 3) % 4;
+        renderDots();
+      };
+      dotsHost.appendChild(slot);
+    }
+  }
+  // slots capped, so four beats read as a bar and not as four stranded dots
+  const slotW = Math.min(70, dotsHost.clientWidth / state.beatsPerBar);
+  [...dotsHost.children].forEach((slot, i) => {
+    slot.style.width = slotW + "px";
+    const l = state.pattern[i];
+    const d = slot.querySelector(".dot");
+    const size = DOT_BASE * beatScale(l);
+    d.style.width = size + "px";
+    d.style.height = size + "px";
+    d.style.background = beatColor(l);
+    d.style.border = l === 0 ? "1px solid color-mix(in srgb, var(--primary) 15%, transparent)" : "none";
+    slot.querySelector(".here").style.opacity =
+      (state.running && state.beatInBar === i) ? 1 : 0;
+  });
+}
+function chips(host, items, isOn, onPick) {
+  host.innerHTML = "";
+  items.forEach(it => {
+    const b = document.createElement("button");
+    b.className = "pill" + (isOn(it) ? " on" : "");
+    b.textContent = it.label;
+    b.onclick = () => { onPick(it); render(); };
+    host.appendChild(b);
+  });
+}
+function render() {
+  document.getElementById("bpmN").textContent = state.bpm;
+  document.getElementById("bpmS").textContent =
+    state.beatsPerBar + "/" + state.noteValue + " · " + tempoTerm();
+  document.getElementById("slider").value = state.bpm;
+  const s = document.getElementById("start");
+  s.textContent = state.running ? "Stop" : "Start";
+  s.classList.toggle("on", state.running);
+  renderDots();
+
+  chips(document.getElementById("beats"),
+    Array.from({length: 12}, (_, i) => ({ label: i + 1, v: i + 1 })),
+    it => state.beatsPerBar === it.v,
+    it => { state.beatsPerBar = it.v; state.pattern = defaultPattern(it.v, state.noteValue);
+            state.beatInBar = 0; });
+  chips(document.getElementById("notes"),
+    [2, 4, 8, 16].map(n => ({ label: n, v: n })),
+    it => state.noteValue === it.v,
+    it => { state.noteValue = it.v; state.pattern = defaultPattern(state.beatsPerBar, it.v); });
+  chips(document.getElementById("subs"),
+    [{label:"None",v:"none"},{label:"Eighths",v:"eighth"},
+     {label:"Triplets",v:"triplet"},{label:"Sixteenths",v:"sixteenth"}],
+    it => state.subdivision === it.v, it => state.subdivision = it.v);
+  chips(document.getElementById("fb"),
+    [{label:"Sound",k:"sound"},{label:"Vibration",k:"vib"}],
+    it => it.k === "vib" ? false : state[it.k],
+    it => { if (it.k !== "vib") state[it.k] = !state[it.k]; });
+}
+
+document.getElementById("slider").oninput = e => { state.bpm = +e.target.value; render(); };
+document.getElementById("minus").onclick = () => { state.bpm = Math.max(30, state.bpm - 1); render(); };
+document.getElementById("plus").onclick = () => { state.bpm = Math.min(250, state.bpm + 1); render(); };
+document.getElementById("start").onclick = () => state.running ? stop() : start();
+body.onclick = () => state.running ? stop() : start();
+document.getElementById("resetBtn").onclick = () => {
+  state.pattern = defaultPattern(state.beatsPerBar, state.noteValue); render();
+};
+document.getElementById("tap").onclick = () => {
+  const now = performance.now();
+  if (state.taps.length && now - state.taps[state.taps.length - 1] > 2500) state.taps = [];
+  state.taps.push(now);
+  while (state.taps.length > 5) state.taps.shift();
+  if (state.taps.length < 2) return;
+  let sum = 0;
+  for (let i = 1; i < state.taps.length; i++) sum += state.taps[i] - state.taps[i - 1];
+  state.bpm = Math.max(30, Math.min(250, Math.round(60000 / (sum / (state.taps.length - 1)))));
+  render();
+};
+const AMBS = ["dark", "light", "violet"];
+document.getElementById("ambBtn").onclick = e => {
+  const next = AMBS[(AMBS.indexOf(document.body.dataset.amb) + 1) % AMBS.length];
+  document.body.dataset.amb = next;
+  e.target.textContent = "Ambience: " + next;
+};
+document.getElementById("soundBtn").onclick = e => {
+  state.sound = !state.sound;
+  e.target.classList.toggle("on", state.sound);
+  e.target.textContent = state.sound ? "Sound on" : "Sound off";
+  render();
+};
+
+render();
+</script>
+</body>
+</html>

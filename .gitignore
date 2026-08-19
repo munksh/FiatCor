@@ -1,0 +1,20 @@
+# qmake / Qt Creator
+*.pro.user
+*.pro.user.*
+Makefile
+moc_*.cpp
+qrc_*.cpp
+*.o
+build/
+build-*/
+
+# RPM-byggen
+RPMS/
+*.rpm
+
+# genereras av tools/make_preview.py
+fiat-cor-preview.html
+
+# Python
+__pycache__/
+*.pyc
