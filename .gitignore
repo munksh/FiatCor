@@ -1,20 +1,60 @@
-# qmake / Qt Creator
+# Local editor configuration
 *.pro.user
 *.pro.user.*
+*.autosave
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# QMake and compiler output
 Makefile
-moc_*.cpp
-qrc_*.cpp
+Makefile.*
+.qmake.stash
 *.o
+*.obj
+*.so
+*.a
+moc_*.cpp
+moc_*.h
+moc_predefs.h
+qrc_*.cpp
+ui_*.h
+
+# Built application
+/harbour-fiatcor
+
+# Sailfish SDK and packaging output
+.sfdk/
+RPMS/
+SRPMS/
+*.rpm
+*.tar.bz2
+*.tar.gz
+documentation.list
+debugfiles.list
+debuglinks.list
+debugsourcefiles.list
+debugsources.list
+elfbins.list
+
+# Build directories
 build/
 build-*/
+target/
+rust/target/
 
-# RPM-byggen
-RPMS/
-*.rpm
-
-# genereras av tools/make_preview.py
-fiat-cor-preview.html
+# Temporary copies
+.backups/
+*.before-*
+*.failed-*
+*.orig
+*.zip
 
 # Python
 __pycache__/
 *.pyc
+
+# Generated preview
+fiat-cor-preview.html
