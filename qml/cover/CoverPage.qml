@@ -3,19 +3,14 @@ import Sailfish.Silica 1.0
 import ".."
 import "../components"
 
-// The heart keeps beating while the app is in the background.
-//
-// The engine lives in ApplicationWindow and keeps ticking as long as the
-// process is alive, so the cover needs no timekeeping of its own -- it
-// listens to the same signals as the main page.
-//
-// CoverBackground follows the ambience by itself. Under Fiat colours it has
-// to be given the paper like every other surface.
-
 CoverBackground {
     id: cover
 
+    // ---- state ----
+
     property QtObject cor
+
+    // ---- paper ----
 
     Rectangle {
         anchors.fill: parent
@@ -26,54 +21,52 @@ CoverBackground {
         }
     }
 
-    PulseHeart {
-        id: heart
-        cor: cover.cor
-        anchors {
-            top: parent.top
-            topMargin: Theme.paddingLarge
-            horizontalCenter: parent.horizontalCenter
-        }
-        width: cover.width * 0.72
-        height: width
-        coreSize: width * 0.42
+    // ---- wordmark ----
+
+    Label {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: FiatCorTheme.coverWordmarkTop
+        text: "fiat cor"
+        color: FiatCorTheme.secondaryText
+        font.pixelSize: Theme.fontSizeTiny
+        font.family: FiatCorTheme.serif
+        font.italic: true
     }
 
-    BeatDots {
-        id: dots
-        cor: cover.cor
-        interactive: false
-        dotSize: Theme.paddingSmall * 1.6
-        anchors {
-            top: heart.bottom
-            horizontalCenter: parent.horizontalCenter
-        }
-        width: cover.width * 0.8
-    }
+    // ---- figure ----
 
     Column {
-        anchors {
-            bottom: parent.bottom
-            bottomMargin: Theme.itemSizeSmall
-            horizontalCenter: parent.horizontalCenter
-        }
-        spacing: 0
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.leftMargin: FiatCorTheme.coverSideMargin
+        anchors.rightMargin: FiatCorTheme.coverSideMargin
+        anchors.topMargin: cover.height * FiatCorTheme.coverFigureFractionShape
+        spacing: Theme.paddingMedium
 
-        Label {
+        PulseHeart {
+            id: heart
             anchors.horizontalCenter: parent.horizontalCenter
+            cor: cover.cor
+            width: cover.width * FiatCorTheme.coverArtFraction
+            height: width
+            coreSize: width * 0.42
+        }
+
+        // No "BPM" beside it. On a metronome's cover the number is the tempo;
+        // nothing else it could be.
+        Label {
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
             text: cover.cor ? cover.cor.bpm : ""
+            color: FiatCorTheme.accent
+            font.pixelSize: FiatCorTheme.coverFigureSize
             font.family: FiatCorTheme.serif
-            font.pixelSize: Theme.fontSizeLarge
-            color: FiatCorTheme.primaryText
-        }
-
-        Label {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: cover.cor ? "BPM · " + cover.cor.timeSignature : ""
-            font.pixelSize: Theme.fontSizeTiny
-            color: FiatCorTheme.secondaryText
         }
     }
+
+    // ---- cover actions ----
 
     CoverActionList {
         id: actions

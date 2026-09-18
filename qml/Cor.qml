@@ -16,7 +16,7 @@
  * The fix is to never count in intervals, only in absolute instants.
  * `_beatTime` is the *ideal* time of the beat we are standing on, and it
  * advances by exactly one beat at a time regardless of when the timer
- * actually fired. Each new timeout is computed against Date.now(), so a
+ * actually fired. Each new timeout is computed against _clock.now(), so a
  * beat that arrived 4 ms late makes the next beat 4 ms shorter instead
  * of pushing the whole grid forward. The error stays where it happened.
  *
@@ -51,6 +51,7 @@
 import QtQuick 2.0
 import QtMultimedia 5.0
 import Nemo.Configuration 1.0
+import harbour.fiatcor 1.0
 
 QtObject {
     id: cor
@@ -70,7 +71,6 @@ QtObject {
     property int noteValue: 4               // 2, 4, 8 or 16 — the beat unit
     property string subdivision: "none"     // none | eighth | triplet | sixteenth
     property bool soundEnabled: true
-    property bool hapticsEnabled: false
     property string presetName: ""
 
     // One weight per beat. Length always tracks beatsPerBar.
@@ -97,10 +97,36 @@ QtObject {
     signal subBeat(int indexInBar, int subIndex)
 
     // Internal timekeeping. Do not touch from outside.
-    property real _beatTime: 0              // ideal instant of the current beat
-    property real _nextTick: 0              // ideal instant of the next click
+    property real _beatTime: 0              // monotonic ideal beat instant
+    property real _nextTick: 0              // monotonic ideal next click
     property int _subIndex: 0
     property var _taps: []
+
+    property PrecisePulse _clock: PrecisePulse {
+        onTriggered: cor._onTimeout(errorMs)
+    }
+
+    property AudioPulse _audio: AudioPulse {
+        onAudioError: console.log("Fiat Cor audio:", message)
+    }
+
+    function _syncAudio() {
+        // Compute this directly from subdivision. During
+        // onSubdivisionChanged, the derived subCount binding may still
+        // contain the previous value.
+        var audioSubCount =
+            subdivision === "eighth" ? 2 :
+            subdivision === "triplet" ? 3 :
+            subdivision === "sixteenth" ? 4 : 1
+
+        _audio.configure(
+            bpm,
+            beatsPerBar,
+            audioSubCount,
+            patternToString(accentPattern),
+            soundEnabled
+        )
+    }
 
     // ---- accents -------------------------------------------------------
 
@@ -147,25 +173,29 @@ QtObject {
 
     function start() {
         if (running) return
+
+        _syncAudio()
+        if (!_audio.start())
+            console.log("Fiat Cor audio start failed:", _audio.errorString())
+
         running = true
         beatInBar = 0
         barCount = 0
         _subIndex = 0
-        _beatTime = Date.now()
+        _beatTime = _clock.now()
         _nextTick = _beatTime
         _logReset()
 
-        // Same order as _onTimeout: sound, schedule, then visuals.
-        var level = _sound()                 // the one sounds now, not in a beat
-        var idx = beatInBar
-        var sub = _subIndex
-        _advanceAndSchedule()
-        _notify(idx, sub, level)
+        // AudioPulse produces the first audible click immediately from
+        // sample frame 0. Let the normal timeout path show that same
+        // logical beat instead of advancing once during start().
+        _arm(_nextTick)
     }
 
     function stop() {
         running = false
-        _timer.stop()
+        _clock.cancel()
+        _audio.stop()
     }
 
     function toggle() {
@@ -187,7 +217,7 @@ QtObject {
      * answer down.
      */
     function tap() {
-        var now = Date.now()
+        var now = _clock.now()
         var taps = _taps.slice()
 
         if (taps.length > 0 && now - taps[taps.length - 1] > 2500)
@@ -220,7 +250,7 @@ QtObject {
         // Order matters: beatsPerBar and noteValue reset the pattern, so
         // the stored pattern has to be applied after them.
         beatsPerBar = presetBeats
-        noteValue = presetNoteValue
+        noteValue = 4
         setBpm(presetBpm)
         subdivision = presetSubdivision
         if (presetPattern && presetPattern.length === presetBeats)
@@ -272,21 +302,15 @@ QtObject {
      */
 
     function _sound() {
-        if (_subIndex === 0) {
-            var level = levelAt(beatInBar)
-            if (soundEnabled && level > 0)
-                _sfxFor(level).play()
-            return level
-        }
-        if (soundEnabled)
-            _sfxSub.play()
+        // AudioPulse generates the audible click on the audio sample
+        // clock. This function now supplies only visual/haptic weight.
+        if (_subIndex === 0)
+            return levelAt(beatInBar)
         return -1
     }
 
     function _notify(indexInBar, subIndex, level) {
         if (subIndex === 0) {
-            if (hapticsEnabled && level > 0)
-                _vibrate(level)
             beat(indexInBar, level)
         } else {
             subBeat(indexInBar, subIndex)
@@ -310,7 +334,7 @@ QtObject {
 
         _nextTick = _beatTime + _subIndex * (beatMs / sc)
 
-        var now = Date.now()
+        var now = _clock.now()
         // The app may have been throttled or suspended. Do not replay the
         // lost beats in a burst — reset the grid from here.
         if (now - _nextTick > 4 * beatMs) {
@@ -319,33 +343,35 @@ QtObject {
             _nextTick = now
         }
 
-        _arm(_nextTick - now)
+        _arm(_nextTick)
     }
 
-    function _arm(delay) {
-        _timer.stop()
-        _timer.interval = delay > 18
-                ? Math.round(delay - Math.max(15, delay * 0.06))
-                : Math.max(0, Math.round(delay))
-        _timer.start()
+    function _arm(targetTime) {
+        _clock.scheduleAt(targetTime)
     }
 
-    function _onTimeout() {
+    function _onTimeout(timerError) {
         if (!running) return
-        var now = Date.now()
-        var remaining = _nextTick - now
-        if (remaining > 2) {
-            _arm(remaining)                  // coarse leg done, take the precise one
+
+        var now = _clock.now()
+        var error = now - _nextTick
+
+        // PrecisePulse normally emits on or after the deadline. Keep this
+        // guard in case a platform timer reports unusually early.
+        if (error < -0.25) {
+            _arm(_nextTick)
             return
         }
 
-        _logTick(now - _nextTick)
+        _logTick(error)
 
+        // AudioPulse owns audible timing. Keep the public beatInBar value
+        // on the beat being shown until the UI has been notified.
         var level = _sound()
         var idx = beatInBar
         var sub = _subIndex
-        _advanceAndSchedule()
         _notify(idx, sub, level)
+        _advanceAndSchedule()
     }
 
     /*
@@ -371,7 +397,7 @@ QtObject {
         _logSum = 0
         _logMin = 9999
         _logMax = -9999
-        _logStart = Date.now()
+        _logStart = _clock.now()
     }
 
     function _logTick(err) {
@@ -383,7 +409,7 @@ QtObject {
 
         // Report once per 32 ticks, so it is a few lines a minute.
         if (_logCount % 32 !== 0) return
-        var elapsed = Date.now() - _logStart
+        var elapsed = _clock.now() - _logStart
         var expected = _logCount * (60000.0 / Math.max(1, bpm)) / Math.max(1, subCount)
         console.log("Fiat Cor timing: ticks=" + _logCount
                     + " mean=" + (_logSum / _logCount).toFixed(2) + "ms"
@@ -394,61 +420,7 @@ QtObject {
         _logMax = -9999
     }
 
-    property Timer _timer: Timer {
-        repeat: false
-        onTriggered: cor._onTimeout()
-    }
-
-    // ---- sound ---------------------------------------------------------
-    // The level differences live in the wav files themselves (see
-    // tools/make_clicks.py), not in `volume` here.
-    // SoundEffect and not MediaPlayer: short latency, no pipeline to spin up.
-
-    function _sfxFor(level) {
-        if (level === levelStrong) return _sfxStrong
-        if (level === levelMedium) return _sfxMedium
-        return _sfxNormal
-    }
-
-    property SoundEffect _sfxStrong: SoundEffect {
-        source: Qt.resolvedUrl("sounds/click-strong.wav")
-    }
-    property SoundEffect _sfxMedium: SoundEffect {
-        source: Qt.resolvedUrl("sounds/click-medium.wav")
-    }
-    property SoundEffect _sfxNormal: SoundEffect {
-        source: Qt.resolvedUrl("sounds/click-normal.wav")
-    }
-    property SoundEffect _sfxSub: SoundEffect {
-        source: Qt.resolvedUrl("sounds/click-sub.wav")
-    }
-
-    // ---- haptics -------------------------------------------------------
-    // QtFeedback is created dynamically so a device without the module
-    // loses the vibration instead of refusing to start the app.
-
-    property var _haptics: null
-
-    function _initHaptics() {
-        try {
-            _haptics = Qt.createQmlObject(
-                'import QtFeedback 5.0; HapticsEffect { attackIntensity: 0.0; attackTime: 8; intensity: 1.0; duration: 24; fadeTime: 12; fadeIntensity: 0.0 }',
-                cor, "corHaptics")
-        } catch (e) {
-            _haptics = null
-            console.log("Fiat Cor: haptics unavailable —", e)
-        }
-    }
-
-    function _vibrate(level) {
-        if (_haptics === null) return
-        _haptics.intensity = level === levelStrong ? 1.0
-                           : level === levelMedium ? 0.7 : 0.45
-        _haptics.duration = level === levelStrong ? 30
-                          : level === levelMedium ? 22 : 16
-        _haptics.stop()
-        _haptics.start()
-    }
+    // Audible timing is generated by AudioPulse.
 
     // ---- persistence ---------------------------------------------------
     // Settings are read once at startup and written on every change.
@@ -459,7 +431,6 @@ QtObject {
     property QtObject _cfgNoteValue: ConfigurationValue { key: "/apps/fiatcor/noteValue"; defaultValue: 4 }
     property QtObject _cfgSub: ConfigurationValue { key: "/apps/fiatcor/subdivision"; defaultValue: "none" }
     property QtObject _cfgSound: ConfigurationValue { key: "/apps/fiatcor/sound"; defaultValue: true }
-    property QtObject _cfgHaptics: ConfigurationValue { key: "/apps/fiatcor/haptics"; defaultValue: false }
     property QtObject _cfgPattern: ConfigurationValue { key: "/apps/fiatcor/accentPattern"; defaultValue: "3,1,1,1" }
 
     /*
@@ -473,22 +444,35 @@ QtObject {
      * Changing the time signature resets the accents. Predictable beats
      * clever: a hand-built 7/8 grouping means nothing once it is 4/4.
      */
-    onBpmChanged: _cfgBpm.value = bpm
-    onSubdivisionChanged: _cfgSub.value = subdivision
+    onBpmChanged: {
+        _cfgBpm.value = bpm
+        _syncAudio()
+    }
+    onSubdivisionChanged: {
+        _cfgSub.value = subdivision
+        _syncAudio()
+    }
 
     onBeatsPerBarChanged: {
         resetAccents()
         _cfgBeats.value = beatsPerBar
+        _syncAudio()
     }
 
     onNoteValueChanged: {
         resetAccents()
         _cfgNoteValue.value = noteValue
+        _syncAudio()
     }
 
-    onSoundEnabledChanged: _cfgSound.value = soundEnabled
-    onHapticsEnabledChanged: _cfgHaptics.value = hapticsEnabled
-    onAccentPatternChanged: _cfgPattern.value = patternToString(accentPattern)
+    onSoundEnabledChanged: {
+        _cfgSound.value = soundEnabled
+        _syncAudio()
+    }
+    onAccentPatternChanged: {
+        _cfgPattern.value = patternToString(accentPattern)
+        _syncAudio()
+    }
 
     function patternToString(p) {
         return p ? p.join(",") : ""
@@ -510,19 +494,17 @@ QtObject {
 
     Component.onCompleted: {
         bpm = Math.max(minBpm, Math.min(maxBpm, _cfgBpm.value))
-        var nv = _cfgNoteValue.value
-        noteValue = (nv === 2 || nv === 4 || nv === 8 || nv === 16) ? nv : 4
+        noteValue = 4
         beatsPerBar = Math.max(1, Math.min(maxBeatsPerBar, _cfgBeats.value))
         var s = _cfgSub.value
         subdivision = (s === "eighth" || s === "triplet" || s === "sixteenth") ? s : "none"
         soundEnabled = _cfgSound.value === true
-        hapticsEnabled = _cfgHaptics.value === true
 
         // Restore the saved accents last: setting beatsPerBar and noteValue
         // above already reset the pattern to the default for that meter.
         var stored = patternFromString(_cfgPattern.value, beatsPerBar)
         accentPattern = stored !== null ? stored : defaultPattern(beatsPerBar, noteValue)
 
-        _initHaptics()
+        _syncAudio()
     }
 }

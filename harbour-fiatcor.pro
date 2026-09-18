@@ -9,14 +9,22 @@
 # Any change to this file, or any new source file:
 #   Build → Clean All → Run qmake → Build
 
-TARGET = FiatCor
+TARGET = harbour-fiatcor
 
 CONFIG += sailfishapp
+QT += multimedia
 
-SOURCES += src/FiatCor.cpp
+SOURCES += \
+    src/harbour-fiatcor.cpp \
+    src/PrecisePulse.cpp \
+    src/AudioPulse.cpp
+
+HEADERS += \
+    src/PrecisePulse.h \
+    src/AudioPulse.h
 
 DISTFILES += \
-    qml/FiatCor.qml \
+    qml/harbour-fiatcor.qml \
     qml/Cor.qml \
     qml/FiatCorTheme.qml \
     qml/Storage.js \
@@ -39,7 +47,7 @@ DISTFILES += \
     qml/sounds/click-medium.wav \
     qml/sounds/click-normal.wav \
     qml/sounds/click-sub.wav \
-    rpm/FiatCor.spec \
-    FiatCor.desktop
+    rpm/harbour-fiatcor.spec \
+    harbour-fiatcor.desktop
 
 SAILFISHAPP_ICONS = 86x86 108x108 128x128 172x172

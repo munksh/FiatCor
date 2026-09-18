@@ -1,7 +1,7 @@
 #
 # Fiat Cor — a metronome for Sailfish OS
 #
-# There is deliberately no rpm/FiatCor.yaml. This .spec is the source of
+# There is deliberately no rpm/harbour-fiatcor.yaml. This .spec is the source of
 # truth and is safe to edit directly.
 #
 # NO Requires line for QtMultimedia, QtFeedback or Nemo.Configuration:
@@ -18,7 +18,7 @@
 # the build target.
 #
 
-Name:       FiatCor
+Name:       harbour-fiatcor
 Summary:    Metronome
 Version:    0.1.0
 Release:    1

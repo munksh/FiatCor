@@ -2,7 +2,7 @@
  * Storage.js — saved tempos in SQLite via QML LocalStorage.
  *
  * Two rules that cost time in Fiat Lux and apply here too:
- *   1. This file MUST be listed under DISTFILES in FiatCor.pro, or it is
+ *   1. This file MUST be listed under DISTFILES in harbour-fiatcor.pro, or it is
  *      not deployed and the app starts with empty storage.
  *   2. Every SQL string in tx.executeSql() sits on ONE line. Multi-line
  *      JavaScript strings do not work there.

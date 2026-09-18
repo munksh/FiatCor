@@ -354,13 +354,13 @@ sudo VBoxManage hostonlyif ipconfig vboxnet0 --ip 10.220.220.1 --netmask 255.255
 ```
 
 - **No `Requires:` line** for QtMultimedia, QtFeedback or Nemo.Configuration
-  in `rpm/FiatCor.spec` — all three ship with the OS. Check with
+  in `rpm/harbour-fiatcor.spec` — all three ship with the OS. Check with
   `ls /usr/lib64/qt5/qml/QtMultimedia/` before adding anything; a package
   that does not exist fails the install with *Paketet hittades ej*.
 - `QT += multimedia` is **not** in the `.pro` either. The QML module loads at
   runtime from the import, so the `-devel` package is not needed in the build
   target.
-- The `[X-Sailjail]` block in `FiatCor.desktop` is **commented out** for
+- The `[X-Sailjail]` block in `harbour-fiatcor.desktop` is **commented out** for
   sideloading. Uncomment it and change `Exec` before submitting to Chum or
   the Store.
 - **Open Application Output when running on the device.** QML binding errors

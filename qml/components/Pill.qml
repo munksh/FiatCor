@@ -10,13 +10,14 @@
 
 import QtQuick 2.0
 import Sailfish.Silica 1.0
+import ".."
 
 MouseArea {
     id: pill
 
     property alias text: label.text
     property bool selected: false
-    property QtObject pal
+    property QtObject pal: FiatCorTheme
 
     implicitHeight: label.height + Theme.paddingSmall * 3
     implicitWidth: Math.max(Theme.itemSizeExtraSmall,

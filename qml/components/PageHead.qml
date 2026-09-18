@@ -22,21 +22,26 @@ Item {
 
     property string title: ""
     property string subtitle: ""
+    property bool leftAligned: false
 
     width: parent ? parent.width : 0
     height: FiatCorTheme.headerTopInset + col.height + Theme.paddingLarge
 
     Column {
         id: col
-        anchors.right: parent.right
-        anchors.rightMargin: Theme.horizontalPageMargin
+        anchors.left: root.leftAligned ? parent.left : undefined
+        anchors.right: root.leftAligned ? undefined : parent.right
+        anchors.leftMargin: root.leftAligned ? Theme.horizontalPageMargin : 0
+        anchors.rightMargin: root.leftAligned ? 0 : Theme.horizontalPageMargin
         anchors.top: parent.top
         anchors.topMargin: FiatCorTheme.headerTopInset
         width: parent.width - Theme.horizontalPageMargin * 2
 
         Label {
             width: parent.width
-            horizontalAlignment: Text.AlignRight
+            horizontalAlignment: root.leftAligned
+                                 ? Text.AlignLeft
+                                 : Text.AlignRight
             truncationMode: TruncationMode.Fade
             text: root.title
             font.pixelSize: Theme.fontSizeLarge
@@ -47,7 +52,9 @@ Item {
         Label {
             width: parent.width
             visible: root.subtitle !== ""
-            horizontalAlignment: Text.AlignRight
+            horizontalAlignment: root.leftAligned
+                                 ? Text.AlignLeft
+                                 : Text.AlignRight
             truncationMode: TruncationMode.Fade
             text: root.subtitle
             font.pixelSize: Theme.fontSizeExtraSmall

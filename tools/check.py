@@ -9,8 +9,9 @@ emulator:
   * unbalanced braces / parens (comments and strings ignored)
   * ids referenced but never declared in the file
   * theme icon names not on the confirmed list
-  * hardcoded hex anywhere under qml/ — the app is ambience first
-  * a page-level background rectangle, which cancels the ambience
+  * hardcoded hex outside FiatCorTheme.qml
+  * a page-filling Rectangle that is not guarded by !FiatCorTheme.ambient
+  * a property bound to itself, and duplicate signal handlers
   * multi-line SQL in tx.executeSql()
   * files under qml/ missing from DISTFILES
 
@@ -99,6 +100,7 @@ def check_balance(path, src):
 # delegates and the page stack.
 GLOBALS = {
     "Qt", "Math", "Date", "JSON", "Number", "String", "Object", "Array",
+    "harbour",
     "console", "parseInt", "parseFloat", "isNaN", "undefined", "null",
     "Theme", "Screen", "Orientation", "PageStatus", "DialogResult",
     "Easing", "Animation", "Text", "TextInput", "TruncationMode", "Font",
@@ -153,6 +155,72 @@ def check_ids(path, src):
                       % (path, line, name))
 
 
+SELF_BIND_RE = re.compile(r"^\s*([a-z][A-Za-z0-9_]*)\s*:\s*\1\s*$", re.M)
+
+
+def check_self_binding(path, src):
+    """
+    `cor: cor` binds a property to itself and evaluates to null forever.
+
+    QML resolves an unqualified name in a binding against the *scope
+    object* — the object the binding belongs to — before it looks at the
+    file's ids. If the target object has a property of that name, the id
+    of the same name is shadowed and never seen. No error, no warning:
+    the page simply comes up with everything null.
+
+    This cost a second deploy. Qualify the right-hand side, or give the
+    id a different name from the property.
+    """
+    code = strip_comments_and_strings(src)
+    for m in SELF_BIND_RE.finditer(code):
+        line = code[:m.start()].count("\n") + 1
+        errors.append("%s:%d '%s: %s' binds a property to itself — the id is "
+                      "shadowed by the property and this is null at runtime"
+                      % (path, line, m.group(1), m.group(1)))
+
+
+HANDLER_RE = re.compile(r"(?<![\w\.])(on[A-Z][A-Za-z0-9_]*)\s*:")
+
+
+def check_duplicate_handlers(path, src):
+    """
+    QML allows exactly one handler per signal per object. A second
+    onXxxChanged is not a warning you can live with — it is
+    "Property value set multiple times", the type fails to load, and the
+    use site reports "Type Cor unavailable" with no hint as to why.
+
+    This cost a deploy. The two handlers were forty lines apart, each
+    sitting next to the code it belonged to, and both looked right.
+    """
+    code = strip_comments_and_strings(src)
+    seen = {}
+    path_stack = []
+    i = 0
+    n = len(code)
+    while i < n:
+        ch = code[i]
+        if ch == "{":
+            path_stack.append(i)
+        elif ch == "}":
+            if path_stack:
+                path_stack.pop()
+        else:
+            m = HANDLER_RE.match(code, i)
+            if m:
+                key = (tuple(path_stack), m.group(1))
+                line = code[:i].count("\n") + 1
+                if key in seen:
+                    errors.append(
+                        "%s:%d '%s' is declared twice on the same object "
+                        "(first at line %d) — the whole type will fail to load"
+                        % (path, line, m.group(1), seen[key]))
+                else:
+                    seen[key] = line
+                i = m.end()
+                continue
+        i += 1
+
+
 def check_icons(path, src):
     for m in re.finditer(r"image://theme/([A-Za-z0-9\-_]+)", src):
         if m.group(1) not in KNOWN_ICONS:
@@ -161,33 +229,60 @@ def check_icons(path, src):
 
 def check_hex(path, src):
     """
-    Fiat Cor is ambience first and has no palette of its own. Only meaning
-    may be hardcoded, and this app's accent levels are degrees of one
-    scale, so nothing here qualifies. Zero hex under qml/.
+    Fiat colours live in exactly one file. Everywhere else a hex literal is
+    how ambient mode breaks in one corner without anyone noticing.
     """
+    if path.endswith("FiatCorTheme.qml"):
+        return
     for i, raw in enumerate(src.splitlines(), 1):
         if raw.strip().startswith(("*", "//", "/*")):
             continue
         if re.search(r"[\"']#[0-9A-Fa-f]{3,8}[\"']", raw):
-            errors.append("%s:%d hardcoded hex — go through Theme/Palette" % (path, i))
+            errors.append("%s:%d hardcoded hex — Fiat colours live in FiatCorTheme.qml only" % (path, i))
 
 
-BG_RE = re.compile(r"Rectangle\s*\{[^}]{0,200}?anchors\.fill\s*:\s*parent", re.S)
+def _block_at(code, brace_index):
+    """Returns the text of the {...} block that opens at brace_index."""
+    depth = 0
+    for j in range(brace_index, len(code)):
+        if code[j] == "{":
+            depth += 1
+        elif code[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return code[brace_index:j + 1]
+    return code[brace_index:]
 
 
-def check_no_page_background(path, src):
+def check_page_background(path, src):
     """
-    The ambience wallpaper is the background. A Rectangle filling a page or
-    the cover cancels it. Cards and internal fills live in components/,
-    which is why this only looks at pages/ and cover/.
+    Under an ambience the wallpaper IS the background, and a Rectangle
+    filling a page cancels it. Under Fiat colours the same Rectangle is
+    required, because the app paints its own paper.
+
+    So the rule is not "no fill" but "no UNGUARDED fill": every page-filling
+    Rectangle must carry visible: !FiatCorTheme.ambient. Wrong in one
+    direction it is a slab over the user's wallpaper; wrong in the other it
+    is light text on a light wallpaper.
+
+    Brace-counted rather than matched with a regex. The first version used
+    one, and the nested Gradient/GradientStop blocks meant it never matched
+    anything at all -- a rule that passes everything, which is worse than no
+    rule because it looks like a rule.
     """
     if not (path.startswith("qml/pages/") or path.startswith("qml/cover/")):
         return
     code = strip_comments_and_strings(src)
-    for m in BG_RE.finditer(code):
+    for m in re.finditer(r"\bRectangle\s*\{", code):
+        brace = code.index("{", m.start())
+        block = _block_at(code, brace)
+        if not re.search(r"anchors\.fill\s*:\s*parent", block):
+            continue
+        if "FiatCorTheme.ambient" in block:
+            continue
         line = code[:m.start()].count("\n") + 1
-        errors.append("%s:%d Rectangle filling the page — this cancels the ambience"
-                      % (path, line))
+        errors.append("%s:%d page-filling Rectangle without "
+                      "visible: !FiatCorTheme.ambient" % (path, line))
 
 
 def check_sql(path, src):
@@ -199,7 +294,7 @@ def check_sql(path, src):
 
 
 def check_distfiles():
-    pro = open(os.path.join(ROOT, "FiatCor.pro"), encoding="utf-8").read()
+    pro = open(os.path.join(ROOT, "harbour-fiatcor.pro"), encoding="utf-8").read()
     listed = set(re.findall(r"(qml/[A-Za-z0-9_/\.\-]+)", pro))
     on_disk = set()
     for dirpath, _dirnames, filenames in os.walk(os.path.join(ROOT, "qml")):
@@ -207,9 +302,9 @@ def check_distfiles():
             rel = os.path.relpath(os.path.join(dirpath, f), ROOT).replace(os.sep, "/")
             on_disk.add(rel)
     for m in sorted(on_disk - listed):
-        errors.append("FiatCor.pro: %s missing from DISTFILES (will not deploy)" % m)
+        errors.append("harbour-fiatcor.pro: %s missing from DISTFILES (will not deploy)" % m)
     for s in sorted(listed - on_disk):
-        warnings.append("FiatCor.pro: %s is in DISTFILES but does not exist" % s)
+        warnings.append("harbour-fiatcor.pro: %s is in DISTFILES but does not exist" % s)
 
 
 def main():
@@ -222,9 +317,11 @@ def main():
             src = open(full, encoding="utf-8").read()
             check_balance(rel, src)
             check_ids(rel, src)
+            check_duplicate_handlers(rel, src)
+            check_self_binding(rel, src)
             check_icons(rel, src)
             check_hex(rel, src)
-            check_no_page_background(rel, src)
+            check_page_background(rel, src)
             check_sql(rel, src)
 
     check_distfiles()

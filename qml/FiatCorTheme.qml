@@ -74,7 +74,7 @@ QtObject {
     // verdicts at all. A metronome never tells you that you are wrong. Its
     // four beat weights are degrees of one emphasis, so they are all drawn
     // from this accent and nothing here means anything.
-    readonly property color accent: ambient ? Theme.highlightColor : "#9E3B4E"
+    readonly property color accent: ambient ? Theme.highlightColor : "#8054AD"
 
     // ---- the shared paper ----
     readonly property color backgroundHigh: "#F2EFE8"
@@ -94,8 +94,10 @@ QtObject {
     // ---- pills ----
     readonly property color pillFill:         Theme.rgba(primaryText, 0.15)
     readonly property color pillBorder:       Theme.rgba(primaryText, 0.55)
-    readonly property color pillFillActive:   Theme.rgba(accent, 0.15)
-    readonly property color pillBorderActive: Theme.rgba(accent, 0.45)
+    readonly property color pillFillActive:   Theme.rgba(accent, 0.20)
+    readonly property color pillBorderActive: accent
+    readonly property color pillText:         primaryText
+    readonly property color pillTextActive:   accent
 
     // Unfilled dots, ring tracks, anything absent.
     readonly property color dotIdle: Theme.rgba(primaryText, 0.22)
@@ -176,7 +178,7 @@ QtObject {
         try { p.secondaryColor = secondaryText } catch (e) { }
         try { p.highlightColor = accent } catch (e) { }
         try { p.secondaryHighlightColor = Theme.rgba(accent, 0.6) } catch (e) { }
-        try { p.highlightBackgroundColor = Theme.rgba(accent, 0.3) } catch (e) { }
+        try { p.highlightBackgroundColor = Theme.rgba(primaryText, 0.12) } catch (e) { }
         try { p.highlightDimmerColor = ambient ? Theme.highlightDimmerColor : backgroundLow } catch (e) { }
         try { p.overlayBackgroundColor = ambient ? Theme.overlayBackgroundColor : backgroundHigh } catch (e) { }
     }

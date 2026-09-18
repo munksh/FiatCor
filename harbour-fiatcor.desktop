@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Icon=harbour-fiatcor
+Exec=harbour-fiatcor
+Name=fiat cor
+Comment=Metronome
+
+[X-Sailjail]
+Permissions=Audio
+OrganizationName=se.munkstolen
+ApplicationName=FiatCor

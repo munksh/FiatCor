@@ -69,7 +69,10 @@ Page {
 
             PageHead {
                 title: "fiat cor"
-                subtitle: page.cor.presetName !== "" ? page.cor.presetName : qsTr("metronome")
+                subtitle: page.cor.presetName !== ""
+                          ? page.cor.presetName
+                          : qsTr("metronome")
+                leftAligned: true
             }
 
             // ---- the instrument ----------------------------------------
@@ -107,17 +110,24 @@ Page {
                         onClicked: page.cor.toggle()
                     }
 
-                    BeatDots {
-                        cor: page.cor
-                        width: parent.width
-                    }
-
-                    Label {
+                    Row {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: page.cor.bpm
-                        color: FiatCorTheme.primaryText
-                        font.family: FiatCorTheme.serif
-                        font.pixelSize: Theme.fontSizeHuge
+                        spacing: Theme.paddingSmall
+
+                        Label {
+                            text: page.cor.bpm
+                            color: FiatCorTheme.primaryText
+                            font.family: FiatCorTheme.serif
+                            font.pixelSize: Theme.fontSizeHuge
+                        }
+
+                        Label {
+                            anchors.baseline: parent.children[0].baseline
+                            text: "BPM"
+                            color: FiatCorTheme.secondaryText
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.weight: Font.Bold
+                        }
                     }
 
                     Label {
@@ -225,39 +235,20 @@ Page {
 
             // ---- metre ---------------------------------------------------
 
-            SectionLabel { text: qsTr("Beats per bar — tap the bar above to set accents") }
+            Slider {
+                id: beatsSlider
+                width: parent.width
+                minimumValue: 1
+                maximumValue: page.cor.maxBeatsPerBar
+                stepSize: 1
+                value: page.cor.beatsPerBar
+                label: qsTr("Beats per bar — tap the bar above to set accents")
+                valueText: Math.round(value)
 
-            Flow {
-                x: Theme.horizontalPageMargin
-                width: page.width - Theme.horizontalPageMargin * 2
-                spacing: Theme.paddingMedium
-
-                Repeater {
-                    model: 12
-
-                    Pill {
-                        text: index + 1
-                        selected: page.cor.beatsPerBar === index + 1
-                        onClicked: page.cor.beatsPerBar = index + 1
-                    }
-                }
-            }
-
-            SectionLabel { text: qsTr("Note value") }
-
-            Flow {
-                x: Theme.horizontalPageMargin
-                width: page.width - Theme.horizontalPageMargin * 2
-                spacing: Theme.paddingMedium
-
-                Repeater {
-                    model: [2, 4, 8, 16]
-
-                    Pill {
-                        text: modelData
-                        selected: page.cor.noteValue === modelData
-                        onClicked: page.cor.noteValue = modelData
-                    }
+                onValueChanged: {
+                    var beats = Math.round(value)
+                    if (beats !== page.cor.beatsPerBar)
+                        page.cor.beatsPerBar = beats
                 }
             }
 
@@ -284,7 +275,7 @@ Page {
                 }
             }
 
-            SectionLabel { text: qsTr("Feedback") }
+            SectionLabel { text: qsTr("Sound") }
 
             Flow {
                 x: Theme.horizontalPageMargin
@@ -292,15 +283,11 @@ Page {
                 spacing: Theme.paddingMedium
 
                 Pill {
-                    text: qsTr("Sound")
+                    text: page.cor.soundEnabled
+                          ? qsTr("Sound on")
+                          : qsTr("Sound off")
                     selected: page.cor.soundEnabled
                     onClicked: page.cor.soundEnabled = !page.cor.soundEnabled
-                }
-
-                Pill {
-                    text: qsTr("Vibration")
-                    selected: page.cor.hapticsEnabled
-                    onClicked: page.cor.hapticsEnabled = !page.cor.hapticsEnabled
                 }
             }
 
