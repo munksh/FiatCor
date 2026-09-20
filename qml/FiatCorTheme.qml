@@ -76,6 +76,23 @@ QtObject {
     // from this accent and nothing here means anything.
     readonly property color accent: ambient ? Theme.highlightColor : "#8054AD"
 
+    function mixColor(a, b, t) {
+        return Qt.rgba(
+            a.r * (1.0 - t) + b.r * t,
+            a.g * (1.0 - t) + b.g * t,
+            a.b * (1.0 - t) + b.b * t,
+            1.0
+        )
+    }
+
+    // A muted variant of the accent, for the Silica chrome that draws with
+    // palette.highlightColor directly -- the pull-down menu's revealed label
+    // chief among them. Found on Fiat Mos: a saturated accent used raw there
+    // reads far louder as a large glowing fill than it does as a button or a
+    // mark. This mutes only that role; everything the app draws itself still
+    // uses the full accent above.
+    readonly property color chromeAccent: mixColor(accent, primaryText, 0.35)
+
     // ---- the shared paper ----
     readonly property color backgroundHigh: "#F2EFE8"
     readonly property color backgroundLow:  "#D8D2C6"
@@ -176,10 +193,34 @@ QtObject {
         try { p.colorScheme = ambient ? Theme.colorScheme : Theme.DarkOnLight } catch (e) { }
         try { p.primaryColor = primaryText } catch (e) { }
         try { p.secondaryColor = secondaryText } catch (e) { }
-        try { p.highlightColor = accent } catch (e) { }
-        try { p.secondaryHighlightColor = Theme.rgba(accent, 0.6) } catch (e) { }
+        try { p.highlightColor = chromeAccent } catch (e) { }
+        try { p.secondaryHighlightColor = Theme.rgba(chromeAccent, 0.6) } catch (e) { }
+        // A neutral wash for in-app selection/highlight surfaces. NOT the
+        // virtual keyboard -- that turned out to be a separate surface
+        // (Maliit/FutoKeyboard) that reads Theme.*, the system ambience,
+        // directly. It cannot be reached from an app's palette at all, so
+        // this project does not try; it follows the ambience.
         try { p.highlightBackgroundColor = Theme.rgba(primaryText, 0.12) } catch (e) { }
         try { p.highlightDimmerColor = ambient ? Theme.highlightDimmerColor : backgroundLow } catch (e) { }
         try { p.overlayBackgroundColor = ambient ? Theme.overlayBackgroundColor : backgroundHigh } catch (e) { }
     }
+
+    // Cover layout
+    readonly property real coverWordmarkTop: Theme.paddingLarge
+    readonly property real coverSideMargin: Theme.paddingLarge
+
+    // The tempo is the figure now, not the heart, so Cor sits on the family's
+    // text line -- the same 0.28 as Mos's count and Vox's letter. The shape
+    // line (0.20) the old cover used is gone with it.
+    readonly property real coverFigureFraction: 0.28
+    readonly property int coverFigureSize: Theme.fontSizeHuge
+
+    // The family maximum: nothing on a cover is wider than half of it.
+    readonly property real coverArtFraction: 0.5
+
+    // The heart hangs under the number, so it is deliberately below that
+    // maximum. At a full 0.5 it reads as a second figure competing with the
+    // tempo rather than as the tempo's pulse. Raise it to coverArtFraction if
+    // the small one looks weak on the device.
+    readonly property real coverHeartFraction: 0.38
 }

@@ -6,15 +6,7 @@ import "cover"
 import "Storage.js" as Storage
 
 // Fiat Cor — a metronome for Sailfish OS.
-//
-// Cor is Latin for heart. Heart → pulse → beat: the involuntary timekeeper.
-// Sibling to Fiat Lux, Fiat Vox and Fiat Mos.
-//
-// The pulse engine is created here rather than on the page, so that the
-// pulse survives navigating to the presets and back, and so the cover can
-// keep beating while the app is minimised.
-//
-//
+
 // WHY THE ID IS corEngine AND NOT cor
 // ------------------------------------------------------------------
 // It was `cor` first, matching the property name on the pages, and every

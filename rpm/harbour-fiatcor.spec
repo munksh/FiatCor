@@ -20,7 +20,7 @@
 
 Name:       harbour-fiatcor
 Summary:    Metronome
-Version:    0.1.0
+Version:    1.0
 Release:    1
 License:    MIT
 URL:        https://github.com/munksh/FiatCor

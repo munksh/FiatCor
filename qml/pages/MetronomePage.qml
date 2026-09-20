@@ -4,14 +4,6 @@ import ".."
 import "../components"
 
 // The main view.
-//
-// The instrument -- heart, bar, tempo -- stands on a card, because a pulse
-// you are reading out of the corner of your eye cannot compete with an
-// arbitrary wallpaper. The controls below are ordinary page content.
-//
-// Order top to bottom follows the thumb: what you touch every few seconds
-// (tap tempo, start/stop) is in the lower half, what you set once per
-// practice session is below that and can be scrolled to.
 
 Page {
     id: page
@@ -37,10 +29,11 @@ Page {
         contentHeight: column.height + Theme.paddingLarge * 2
 
         PullDownMenu {
+            highlightColor: FiatCorTheme.chromeAccent
+
             MenuItem {
                 text: qsTr("About")
-                onClicked: pageStack.animatorPush(Qt.resolvedUrl("AboutPage.qml"),
-                                                  { cor: page.cor })
+                onClicked: pageStack.animatorPush(Qt.resolvedUrl("AboutPage.qml"))
             }
             MenuItem {
                 text: FiatCorTheme.ambient ? qsTr("Fiat colours") : qsTr("Follow ambience")

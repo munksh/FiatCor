@@ -1,3 +1,11 @@
+/*
+ * The heart keeps beating while the app is in the background.
+ *
+ * The engine lives in ApplicationWindow and ticks as long as the process is
+ * alive, so the cover keeps no time of its own — it listens to the same
+ * signals as the main page.
+ */
+
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import ".."
@@ -35,6 +43,10 @@ CoverBackground {
     }
 
     // ---- figure ----
+    //
+    // The tempo leads and the heart hangs under it, so the number lands on the
+    // same line as Mos's count and Vox's letter. The heart is then the proof
+    // that the number is live rather than the figure itself.
 
     Column {
         anchors.left: parent.left
@@ -42,17 +54,8 @@ CoverBackground {
         anchors.top: parent.top
         anchors.leftMargin: FiatCorTheme.coverSideMargin
         anchors.rightMargin: FiatCorTheme.coverSideMargin
-        anchors.topMargin: cover.height * FiatCorTheme.coverFigureFractionShape
+        anchors.topMargin: cover.height * FiatCorTheme.coverFigureFraction
         spacing: Theme.paddingMedium
-
-        PulseHeart {
-            id: heart
-            anchors.horizontalCenter: parent.horizontalCenter
-            cor: cover.cor
-            width: cover.width * FiatCorTheme.coverArtFraction
-            height: width
-            coreSize: width * 0.42
-        }
 
         // No "BPM" beside it. On a metronome's cover the number is the tempo;
         // nothing else it could be.
@@ -63,6 +66,15 @@ CoverBackground {
             color: FiatCorTheme.accent
             font.pixelSize: FiatCorTheme.coverFigureSize
             font.family: FiatCorTheme.serif
+        }
+
+        PulseHeart {
+            id: heart
+            anchors.horizontalCenter: parent.horizontalCenter
+            cor: cover.cor
+            width: cover.width * FiatCorTheme.coverHeartFraction
+            height: width
+            coreSize: width * 0.42
         }
     }
 

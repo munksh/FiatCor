@@ -1,14 +1,3 @@
-# Fiat Cor — a metronome for Sailfish OS
-#
-# qmake, not CMake. Build in Qt Creator, or:
-#   ~/SailfishOS/bin/sfdk -c target=SailfishOS-5.0.0.62-aarch64 build
-#
-# NOTE: everything under qml/ must be listed in DISTFILES or it is not
-# deployed. That includes Storage.js and the wav files.
-#
-# Any change to this file, or any new source file:
-#   Build → Clean All → Run qmake → Build
-
 TARGET = harbour-fiatcor
 
 CONFIG += sailfishapp
@@ -39,6 +28,15 @@ DISTFILES += \
     qml/components/SectionLabel.qml \
     qml/components/WideButton.qml \
     qml/cover/CoverPage.qml \
+    qml/images/family/harbour-fiatagenda.png \
+    qml/images/family/harbour-fiatmargo.png \
+    qml/images/family/harbour-fiatglossa.png \
+    qml/images/family/harbour-fiatvox.png \
+    qml/images/family/harbour-fiatpons.png \
+    qml/images/family/harbour-fiatlux.png \
+    qml/images/family/harbour-fiatcor.png \
+    qml/images/family/harbour-fiatpassus.png \
+    qml/images/family/harbour-fiatmos.png \
     qml/pages/AboutPage.qml \
     qml/pages/MetronomePage.qml \
     qml/pages/PresetsPage.qml \
@@ -51,3 +49,6 @@ DISTFILES += \
     harbour-fiatcor.desktop
 
 SAILFISHAPP_ICONS = 86x86 108x108 128x128 172x172
+
+VERSION = 1.0.0
+DEFINES += APP_VERSION=\\\"$$VERSION\\\"
