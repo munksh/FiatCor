@@ -33,6 +33,7 @@ BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  desktop-file-utils
+BuildRequires:  pkgconfig(Qt5Multimedia)
 
 %description
 Fiat Cor is a metronome with a heartbeat: a drift-free pulse, time
