@@ -39,6 +39,24 @@ Fiat Cor is a metronome with a heartbeat: a drift-free pulse, time
 signature, subdivision, per-beat accents, tap tempo and saved tempos.
 Part of the Fiat family alongside Fiat Lux and Fiat Vox.
 
+%if 0%{?_chum}
+Title: Fiat Cor
+Type: desktop-application
+DeveloperName: Munkstolen
+Categories:
+ - Audio
+ - Utility
+PackageIcon: https://munkstolen.se/SFOS/harbour-fiatcor.png
+Screenshots:
+ - https://munkstolen.se/SFOS/fiatcor1.png
+ - https://munkstolen.se/SFOS/fiatcor2.png
+Custom:
+  Repo: https://github.com/munksh/FiatCor
+Links:
+  Homepage: https://github.com/munksh/FiatCor
+  Bugtracker: https://github.com/munksh/FiatCor/issues
+%endif
+
 %prep
 %setup -q -n %{name}-%{version}
 
