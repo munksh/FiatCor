@@ -109,7 +109,7 @@ GLOBALS = {
     "this", "arguments", "e", "tx", "rs", "r", "v", "n", "i", "s", "p",
     # grouped properties are written with a dot but are not ids
     "anchors", "font", "border", "easing", "gradient", "layer",
-    "inputMethodHints", "textFormat", "EnterKey",
+    "inputMethodHints", "textFormat", "EnterKey", "sourceSize",
 }
 
 # The type token must not be allowed to cross a newline. An earlier version
@@ -302,7 +302,7 @@ def check_distfiles():
             rel = os.path.relpath(os.path.join(dirpath, f), ROOT).replace(os.sep, "/")
             on_disk.add(rel)
     for m in sorted(on_disk - listed):
-        errors.append("harbour-fiatcor.pro: %s missing from DISTFILES (will not deploy)" % m)
+        errors.append("harbour-fiatcor.pro: %s missing from DISTFILES" % m)
     for s in sorted(listed - on_disk):
         warnings.append("harbour-fiatcor.pro: %s is in DISTFILES but does not exist" % s)
 

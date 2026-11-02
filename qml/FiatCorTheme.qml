@@ -66,14 +66,11 @@ QtObject {
     readonly property color primaryText:   ambient ? Theme.primaryColor   : "#1A1A1A"
     readonly property color secondaryText: ambient ? Theme.secondaryColor : Qt.rgba(0.10, 0.10, 0.10, 0.55)
 
-    // Fiat Cor's accent: garnet. A heart colour that is not an alarm.
+    // Fiat Cor's accent: violet, from the family table.
     //
-    // The family rule is that an accent must not collide with the app's own
-    // semantic colours. A red accent would be a problem in an app that also
-    // uses red to mean "wrong" — Fiat Cor does not, and cannot: it has no
-    // verdicts at all. A metronome never tells you that you are wrong. Its
-    // four beat weights are degrees of one emphasis, so they are all drawn
-    // from this accent and nothing here means anything.
+    // Fiat Cor has no semantic colours at all. A metronome never tells you
+    // that you are wrong: its four beat weights are degrees of one emphasis,
+    // so they are all drawn from this accent and none of them is a verdict.
     readonly property color accent: ambient ? Theme.highlightColor : "#8054AD"
 
     function mixColor(a, b, t) {

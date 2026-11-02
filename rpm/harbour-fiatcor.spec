@@ -1,26 +1,18 @@
 #
 # Fiat Cor — a metronome for Sailfish OS
 #
-# There is deliberately no rpm/harbour-fiatcor.yaml. This .spec is the source of
-# truth and is safe to edit directly.
+# This .spec is the source of truth; there is no .yaml.
 #
-# NO Requires line for QtMultimedia, QtFeedback or Nemo.Configuration:
-# all three QML modules ship with the OS. Check on the device with
-#   ls /usr/lib64/qt5/qml/QtMultimedia/
-#   ls /usr/lib64/qt5/qml/QtFeedback/
-#   ls /usr/lib64/qt5/qml/Nemo/Configuration/
-# before adding anything — a package that does not exist fails the
-# install with "Paketet hittades ej", exactly as
-# nemo-qml-plugin-configuration did in Fiat Lux.
+# The version is written here and nowhere else. It reaches the About page
+# through %%qmake5 APP_VERSION=... and the .pro. Tag the release commit with
+# the same number: sfdk takes the package version from the nearest git tag.
 #
-# Note that QT += multimedia is NOT in the .pro either. The QML module is
-# loaded at runtime by the import, so the -devel package is not needed in
-# the build target.
+# No Requires: for QtMultimedia or Nemo.Configuration — both ship with the OS.
 #
 
 Name:       harbour-fiatcor
 Summary:    Metronome
-Version:    1.0
+Version:    1.1
 Release:    1
 License:    MIT
 URL:        https://github.com/munksh/FiatCor
@@ -32,16 +24,16 @@ BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
-BuildRequires:  desktop-file-utils
 BuildRequires:  pkgconfig(Qt5Multimedia)
+BuildRequires:  desktop-file-utils
 
 %description
-Fiat Cor is a metronome with a heartbeat: a drift-free pulse, time
+Fiat Cor is a metronome with a heartbeat: a sample-accurate pulse, time
 signature, subdivision, per-beat accents, tap tempo and saved tempos.
-Part of the Fiat family alongside Fiat Lux and Fiat Vox.
+Part of the fiat family of small Sailfish OS apps.
 
 %if 0%{?_chum}
-Title: Fiat Cor
+Title: fiat cor
 Type: desktop-application
 DeveloperName: Munkstolen
 Categories:
@@ -64,7 +56,7 @@ Links:
 %setup -q -n %{name}-%{version}
 
 %build
-%qmake5
+%qmake5 APP_VERSION=%{version}
 %make_build
 
 %install
@@ -80,3 +72,11 @@ desktop-file-install --delete-original \
 %{_datadir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
+
+%changelog
+* Mon Nov 02 2026 Caesar Prometheus Ivarsson <caesar@munkstolen.se> - 1.1-1
+- About shows the version of the installed package, not a fixed number.
+- Packaging tidied for the Jolla Store.
+
+* Mon Oct 05 2026 Caesar Prometheus Ivarsson <caesar@munkstolen.se> - 1.0-1
+- First release.
