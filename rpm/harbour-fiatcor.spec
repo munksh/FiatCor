@@ -12,7 +12,7 @@
 
 Name:       harbour-fiatcor
 Summary:    Metronome
-Version:    1.1
+Version:    1.2
 Release:    1
 License:    MIT
 URL:        https://github.com/munksh/FiatCor
@@ -74,6 +74,10 @@ desktop-file-install --delete-original \
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
 
 %changelog
+* Mon Nov 02 2026 Caesar Prometheus Ivarsson <caesar@munkstolen.se> - 1.2-1
+- About lists the whole fiat family, Penus and Tessera included.
+- Every sibling in the list links to munkstolen.se.
+
 * Mon Nov 02 2026 Caesar Prometheus Ivarsson <caesar@munkstolen.se> - 1.1-1
 - About shows the version of the installed package, not a fixed number.
 - Packaging tidied for the Jolla Store.

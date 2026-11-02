@@ -53,8 +53,10 @@ DISTFILES += \
     qml/pages/images/family/harbour-fiatmargo.png \
     qml/pages/images/family/harbour-fiatmos.png \
     qml/pages/images/family/harbour-fiatpassus.png \
+    qml/pages/images/family/harbour-fiatpenus.png \
     qml/pages/images/family/harbour-fiatpons.png \
     qml/pages/images/family/harbour-fiatratio.png \
+    qml/pages/images/family/harbour-fiattessera.png \
     qml/pages/images/family/harbour-fiatvox.png \
     qml/sounds/click-strong.wav \
     qml/sounds/click-medium.wav \
